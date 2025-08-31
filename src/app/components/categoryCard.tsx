@@ -19,10 +19,12 @@ interface CategoryCardProps {
   updateCategory: (index: number, newCategory: Category) => void;
   removeCategory: (index: number) => void;
   onMouseUp?: (e: React.MouseEvent) => void;
+  onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  draggingCardOutside: Category | null;
 } 
 
-const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps> (({ category, index, updateCategory, removeCategory, onMouseUp }, ref) => {
-  const [dragging, setDragging] = React.useState(false);
+const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps> (({ category, index, updateCategory, removeCategory, onMouseUp, onMouseDown, draggingCardOutside  }, ref) => {
+ 
   const [offset, setOffset] = React.useState({ x: 0, y: 0 });
   const internalRef = React.useRef<HTMLDivElement>(null);
 
@@ -35,36 +37,16 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps> (({ cat
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setDragging(true);
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+ 
     setOffset({ x: e.clientX - category.x, y: e.clientY - category.y });
+
+    if (onMouseDown) onMouseDown(e); // vai iniciar o drag global
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!dragging || !internalRef.current) return;
 
-    const rect = internalRef.current.getBoundingClientRect();
-    const cardWidth = rect.width;
-    const cardHeight = rect.height;
 
-    let newX = e.clientX - offset.x;
-    let newY = e.clientY - offset.y;
 
-    // Limita para que o card não ultrapasse a tela
-    newX = Math.max(0, Math.min(window.innerWidth - cardWidth, newX));
-    newY = Math.max(0, Math.min(window.innerHeight - cardHeight, newY));
-
-    updateCategory(index, {
-      ...category,
-      x: newX,
-      y: newY,
-    });
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    setDragging(false);
-    if (onMouseUp) onMouseUp(e); // 🔥 chama a função externa
-  };
 
   const handleAddTask = () => {
     if (!category.input.trim()) return;
@@ -92,8 +74,6 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps> (({ cat
     <div
       ref={setRefs}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
       style={{ position: "absolute", left: category.x, top: category.y, cursor: "grab" }}
       className="w-80 p-4 bg-gray-700 text-white rounded shadow select-none"
     >

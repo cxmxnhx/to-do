@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 
 interface Task { task: string; done: boolean; }
+
 interface Category {
   name: string;
   x: number;
@@ -18,24 +19,145 @@ interface Category {
   input: string;
 }
 
+interface BoxData {
+  id: number;
+  x: number;
+  y: number;
+  label: string;
+  cardsInBox: Category[];
+  cardRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
+}
+
+
+
 
 export default function DraggableTodo() {
+
+ const [boxes, setBoxes] = useState<BoxData[]>([]); // inicial vazio
+ const setBoxRef = (id: number, el: HTMLDivElement | null) => {
+    if (el) boxRefs.current[id] = el;
+  };
+
+
   const categoryRef = useRef<HTMLDivElement>(null);
   const [showTaskBoard, setShowTaskBoard] = useState(true);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const boxRef = useRef<HTMLDivElement>(null);
+
+  const boxRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  
+
   const [cardsInBox, setCardsInBox] = useState<Category[]>([]);
 
+  const [draggingCardOffset, setDraggingCardOffset] = useState({ x: 0, y: 0 });
+  const [draggingCardPos, setDraggingCardPos] = useState({ x: 0, y: 0 });
+  const [draggingCardOutside, setDraggingCardOutside] = useState<Category | null>(null);
+
   const stopCategoryDrag = () => setCategoryDragging(false);
+
+  const criarGaveta = () => {
+    const newBox: BoxData = {
+      id: Date.now(),
+      x: 100,
+      y: 100,
+      label: "Nova Gaveta",
+      cardsInBox: [],
+      cardRefs: { current: [] } as React.MutableRefObject<(HTMLDivElement | null)[]>
+    };
+
+    setBoxes(prev => [...prev, newBox]);
+  };
+
+  
+  const handleDraggingMove = (e: React.MouseEvent) => {
+    if (!draggingCardOutside) return;
+
+    setDraggingCardPos({
+      x: e.clientX - draggingCardOffset.x,
+      y: e.clientY - draggingCardOffset.y,
+    });
+  };
+
+const handleDraggingEnd = () => {
+  if (!draggingCardOutside) return;
+
+  const finalX = draggingCardPos.x;
+  const finalY = draggingCardPos.y;
+
+  let cardAdded = false;
+
+  // 1️⃣ Tenta adicionar em alguma gaveta
+  boxes.forEach(box => {
+    if (cardAdded) return; // já entrou em uma, ignora as outras
+    const el = boxRefs.current[box.id];
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    if (
+      finalX > rect.left &&
+      finalX < rect.right &&
+      finalY > rect.top &&
+      finalY < rect.bottom
+    ) {
+      setBoxes(prev =>
+        prev.map(b =>
+          b.id === box.id
+            ? { ...b, cardsInBox: [draggingCardOutside!, ...b.cardsInBox] }
+            : b
+        )
+      );
+      cardAdded = true;
+    }
+  });
+
+  // 2️⃣ Se não entrou em gaveta, tenta na "Minha Caixa"
+  if (!cardAdded && boxRef.current) {
+    const rect = boxRef.current.getBoundingClientRect();
+    if (
+      finalX > rect.left &&
+      finalX < rect.right &&
+      finalY > rect.top &&
+      finalY < rect.bottom
+    ) {
+      setCardsInBox(prev => [draggingCardOutside!, ...prev]);
+      cardAdded = true;
+    }
+  }
+
+  // 3️⃣ Se não entrou em lugar nenhum, volta para categories
+  if (!cardAdded) {
+    setCategories(prev => [
+      ...prev,
+      { ...draggingCardOutside!, x: finalX, y: finalY }
+    ]);
+  }
+
+  // Limpa o estado de arrasto
+  setDraggingCardOutside(null);
+  setDraggingCardOffset({ x: 0, y: 0 });
+  setDraggingCardPos({ x: 0, y: 0 });
+
+  // ⚡ resetar drag interno dos CategoryCards
+cardRefs.current.forEach(ref => {
+  if (!ref) return;
+  const cardInstance = ref as any;
+  if (cardInstance && cardInstance.dragging) {
+    cardInstance.dragging = false;
+  }
+});
+};
+
+
 
   const addCardToBox = (card: Category) => {
     setCardsInBox(prev => [card, ...prev]);
   };
 
-  const removeCardFromBox = (index: number) => {
+  const removeCardFromBox = (index: number, shouldReadd = true) => {
     setCardsInBox(prev => {
       const removed = prev[index];
-      if (removed) {
+      if (removed && shouldReadd) {
         setCategories(old => [...old, removed]); // reaparece na tela
       }
       return prev.filter((_, i) => i !== index);
@@ -84,13 +206,37 @@ export default function DraggableTodo() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
     localStorage.setItem("taskPosition", JSON.stringify(taskPosition));
     localStorage.setItem("categoryPosition", JSON.stringify(categoryPosition));
+
   }, [categories, tasks, taskPosition, categoryPosition]);
 
-    const updateCategory = (index: number, newCategory: Category) => {
-        setCategories(prevCategories => 
-            prevCategories.map((c, i) => i === index ? newCategory : c)
-        );
-    };
+  
+  useEffect(() => {
+  const handleGlobalMouseUp = () => {
+    if (draggingCardOutside) {
+      // Se estava arrastando, finaliza o drag
+      handleDraggingEnd();
+    }
+    // Reseta estado de arrasto
+    setDraggingCardOutside(null);
+    setDraggingCardOffset({ x: 0, y: 0 });
+    setDraggingCardPos({ x: 0, y: 0 });
+  };
+
+  window.addEventListener("mouseup", handleGlobalMouseUp);
+  return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+}, [draggingCardOutside, boxes, categories, cardsInBox]);;
+
+
+
+
+  const updateCategory = (index: number, newCategory: Category) => {
+      setCategories(prevCategories => 
+        prevCategories.map((c, i) => i === index ? newCategory : c)
+      );
+  };
+
+
+
 
   const addCategory = () => {
     if (!categoryInput.trim()) return;
@@ -168,9 +314,24 @@ export default function DraggableTodo() {
 
   return (
     <div
-      onMouseMove={(e) => { handleTaskMouseMove(e); handleCategoryMouseMove(e); }}
-      onMouseUp={() => { handleTaskMouseUp(); stopCategoryDrag(); }}
-      className={`w-screen h-screen relative overflow-hidden ${darkMode ? "bg-black" : "bg-white"}`}
+      onMouseMove={(e) => {
+        handleTaskMouseMove(e);
+        handleCategoryMouseMove(e);
+        handleDraggingMove(e); // ⬅ aqui
+      }}
+
+      
+      onMouseUp={() => {
+        handleTaskMouseUp();
+        stopCategoryDrag();
+        handleDraggingEnd(); // ⬅ aqui
+
+        setDraggingCardOutside(null);
+        setDraggingCardOffset({ x: 0, y: 0 });
+        setDraggingCardPos({ x: 0, y: 0 });
+      }}
+
+       className={`fixed top-0 left-0 w-screen h-screen overflow-hidden ${darkMode ? "bg-black" : "bg-white"}`}
     >
       <button
         onClick={() => setDarkMode(!darkMode)}
@@ -184,9 +345,9 @@ export default function DraggableTodo() {
         className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 absolute top-16 right-4"
       >
         Limpar Categorias
-    </button>
+      </button>
 
-      {/* Card de criação de categoria */}
+      {/* Card de criação de tarefa */}
       <div
         ref={categoryRef}
         onMouseDown={(e) => {
@@ -200,7 +361,7 @@ export default function DraggableTodo() {
              darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-black"
         }`}
       >
-        <h2 className="text-base sm:text-lg md:text-xl font-bold whitespace-nowrap">Criar Categoria</h2>
+        <h2 className="text-base sm:text-lg md:text-xl font-bold whitespace-nowrap">Nova tarefa</h2>
         <input
           value={categoryInput}
           onChange={(e) => setCategoryInput(e.target.value)}
@@ -216,6 +377,50 @@ export default function DraggableTodo() {
         </button>
       </div>
 
+      {/* Botão para criar gaveta */}
+      <button
+       onClick={() => criarGaveta()} // função que cria um novo DraggableBox
+        className="absolute top-32 right-4 px-3 py-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+      >
+        Criar Gaveta
+      </button>
+
+
+
+
+      {/* Renderização das gavetas */}
+      {boxes.map(box => (
+      <DraggableBox
+        key={box.id}
+        ref={el => { if (el) boxRefs.current[box.id] = el; }}
+        label={box.label}
+        cardsInBox={box.cardsInBox}
+        cardRefs={box.cardRefs}
+
+        onStartDraggingOutside={(card, e) => {
+      
+          const rect = (e.target as HTMLDivElement).getBoundingClientRect();
+          const offsetX = e.clientX - rect.left;
+          const offsetY = e.clientY - rect.top;
+
+          setDraggingCardOutside(card);
+          setDraggingCardPos({ x: e.clientX - offsetX, y: e.clientY - offsetY });
+          setDraggingCardOffset({ x: offsetX, y: offsetY });
+
+          // Remove da Box
+          setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, cardsInBox: b.cardsInBox.filter(c => c !== card) } : b));
+        }}
+
+
+        addCardToBox={(card) => {
+         setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, cardsInBox: [card, ...b.cardsInBox] } : b));
+        }}
+        removeCardFromBox={(index) => {
+          setBoxes(prev => prev.map(b => b.id === box.id ? { ...b, cardsInBox: b.cardsInBox.filter((_, i) => i !== index) } : b));
+        }}
+        darkMode={darkMode}
+      />
+      ))}
   
       <DraggableBox
         ref={boxRef}
@@ -223,8 +428,29 @@ export default function DraggableTodo() {
         cardsInBox={cardsInBox}
         cardRefs={cardRefs}
         addCardToBox={(card) => setCardsInBox(prev => [card, ...prev])}
-        removeCardFromBox={removeCardFromBox}
+
+        removeCardFromBox={(index) => {
+          // opcional: você ainda pode remover diretamente da Box
+          setCardsInBox(prev => prev.filter((_, i) => i !== index));
+        }}
+
+        onStartDraggingOutside={(card, e) => {
+          const rect = (e.target as HTMLDivElement).getBoundingClientRect();
+          const offsetX = e.clientX - rect.left;
+          const offsetY = e.clientY - rect.top;
+
+          setDraggingCardOutside(card);
+          setDraggingCardPos({ x: e.clientX - offsetX, y: e.clientY - offsetY });
+          setDraggingCardOffset({ x: offsetX, y: offsetY });
+
+          // Remove da Box
+          setCardsInBox(prev => prev.filter(c => c !== card));
+        }}
+
+        darkMode={darkMode}
       />
+
+      
   
 
       {/* Renderizar categorias */}
@@ -236,6 +462,30 @@ export default function DraggableTodo() {
             animate={{ opacity: 1, y: 0 }}
            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
+            onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
+
+              if (draggingCardOutside) return;
+
+              const target = e.target as HTMLElement;
+              if (target.tagName === "BUTTON" || target.closest("button")) return;
+              const cardEl = cardRefs.current[i]; // <- aqui usamos o ref do CategoryCard
+              if (!cardEl) return;
+
+              const rect = cardEl.getBoundingClientRect(); // <-- agora é o card real
+
+              const offsetX = e.clientX - rect.left;
+              const offsetY = e.clientY - rect.top;
+
+              setDraggingCardOutside(c);
+              setDraggingCardOffset({ x: offsetX, y: offsetY });
+              setDraggingCardPos({ x: e.clientX - offsetX, y: e.clientY - offsetY });
+
+              setCategories(prev => prev.filter((_, j) => j !== i));
+
+              // desabilita drag interno
+              c.dragging = false;
+            }}
+    
           >
             <CategoryCard
               ref={el => { cardRefs.current[i] = el; }}
@@ -244,10 +494,26 @@ export default function DraggableTodo() {
               updateCategory={updateCategory}
               removeCategory={removeCategory} 
               onMouseUp={() => handleCategoryMouseUp(i, cardRefs.current[i])}
+              draggingCardOutside={draggingCardOutside}
+              
             />
           </motion.div>
         ))}
       </AnimatePresence>
+
+      {draggingCardOutside && (
+        <div
+          style={{
+            position: 'absolute',
+            left: draggingCardPos.x,
+            top: draggingCardPos.y,
+            pointerEvents: 'none',
+            }}
+            className="bg-gray-700 text-white p-2 rounded cursor-grabbing"
+          >
+          {draggingCardOutside.name}
+        </div>
+      )}
 
       {/* Minhas tarefas */}
       {showTaskBoard && (
@@ -262,7 +528,11 @@ export default function DraggableTodo() {
         handleMouseDown={handleTaskMouseDown}
         close={() => setShowTaskBoard(false)}
       />
-    )}
+      )}
+
+ 
+
+
     </div>
   );
 }
