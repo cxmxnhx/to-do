@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import CategoryCard from "./categoryCard";
-import TaskBoard from "./TaskBoard";
+
 
 export default function MobileTodo() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -38,20 +38,6 @@ export default function MobileTodo() {
     if (!categoryInput.trim()) return;
     setCategories([...categories, { name: categoryInput, items: [], input: "" }]);
     setCategoryInput("");
-  };
-
-  const addTask = () => {
-    if (!input.trim()) return;
-    setTasks([...tasks, { task: input, done: false }]);
-    setInput("");
-  };
-
-  const toggleDone = (index: number) => {
-    setTasks(tasks.map((t, i) => (i === index ? { ...t, done: !t.done } : t)));
-  };
-
-  const removeTask = (index: number) => {
-    setTasks(tasks.filter((_, i) => i !== index));
   };
 
   return (

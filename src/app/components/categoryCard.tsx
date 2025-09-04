@@ -19,7 +19,7 @@ interface CategoryCardProps {
   index: number;
   updateCategory: (index: number, newCategory: Category) => void;
   removeCategory: (index: number) => void;
-  onStore?: (index: number) => void; // nova prop
+  onStore?: (index: number) => void;
   onMouseUp?: (e: React.MouseEvent) => void;
   onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
   draggingCardOutside: Category | null;
@@ -28,25 +28,9 @@ interface CategoryCardProps {
 
 const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
   (
-    { category, index, updateCategory, removeCategory, onStore, onMouseUp, onMouseDown, draggingCardOutside, darkMode },
-    ref
+    { category, index, updateCategory, removeCategory, onStore, darkMode },
   ) => {
-    const [offset, setOffset] = React.useState({ x: 0, y: 0 });
-    const internalRef = React.useRef<HTMLDivElement>(null);
-
-    const setRefs = (el: HTMLDivElement) => {
-      internalRef.current = el;
-      if (typeof ref === "function") {
-        ref(el);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
-      }
-    };
-
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-      setOffset({ x: e.clientX - category.x, y: e.clientY - category.y });
-      if (onMouseDown) onMouseDown(e); // inicia drag no desktop
-    };
+ 
 
     const handleAddTask = () => {
       if (!category.input.trim()) return;
