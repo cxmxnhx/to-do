@@ -8,6 +8,26 @@ export default function DesktopTodo() {
   const [categoryInput, setCategoryInput] = useState("");
   const [darkMode, setDarkMode] = useState(false);
 
+  const generateWeekDays = () => {
+    const days = [
+      "Segunda-feira",
+      "Terça-feira",
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira",
+      "Sábado",
+      "Domingo",
+    ];
+
+
+   const newCategories = days
+    .filter(day => !categories.some(c => c.name === day))
+    .map(day => ({ name: day, items: [], input: "" }));
+
+    setCategories(prev => [...prev, ...newCategories]);
+  };
+
+
   // Guardar card
   const storeCategory = (index: number) => {
     const cat = categories[index];
@@ -44,6 +64,21 @@ export default function DesktopTodo() {
           {darkMode ? "Claro" : "Escuro"}
         </button>
 
+
+
+
+          {/* Botão gerar dias */}
+        <button
+          onClick={generateWeekDays}
+          className={`px-3 py-1 rounded ${
+            darkMode
+              ? "bg-green-100 text-black hover:bg-green-500"
+              : "bg-green-500 text-white hover:bg-green-600"
+          }`}
+        >
+          Gerar dias
+        </button>
+
         <button
           onClick={() => setCategories([])}
           className={`px-3 py-1 rounded ${
@@ -64,7 +99,7 @@ export default function DesktopTodo() {
             onChange={(e) => setCategoryInput(e.target.value)}
             className={`flex-1 p-2 rounded border placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400
               ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"}`}
-            placeholder="Nova categoria"
+            placeholder="Nova lista"
           />
           <button
             onClick={addCategory}

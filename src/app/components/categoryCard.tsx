@@ -66,9 +66,9 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
             {onStore && (
             <button
               onClick={() => onStore(index)}
-              className="text-black bg-gray-200 hover:bg-yellow-400 px-2 py-1 rounded"
+              className="text-black bg-gray-200 hover:bg-gray-400 px-2 py-1 rounded"
             >
-             Guardar
+             Salvar
             </button>
           )}
           </div>
