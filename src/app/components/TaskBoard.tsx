@@ -16,7 +16,6 @@ interface TaskBoardProps {
   
 }
 
-
 export default function TaskBoard({
   tasks,
   input,

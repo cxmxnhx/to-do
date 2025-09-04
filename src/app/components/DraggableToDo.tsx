@@ -38,21 +38,28 @@ export default function DraggableTodo() {
     if (el) boxRefs.current[id] = el;
   };
 
+  const [scale, setScale] = useState(1); // 1 = 100%
+  const [lastDistance, setLastDistance] = useState<number | null>(null);
 
   const categoryRef = useRef<HTMLDivElement>(null);
   const [showTaskBoard, setShowTaskBoard] = useState(true);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
   const boxRef = useRef<HTMLDivElement>(null);
-
   const boxRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-  
-
   const [cardsInBox, setCardsInBox] = useState<Category[]>([]);
 
   const [draggingCardOffset, setDraggingCardOffset] = useState({ x: 0, y: 0 });
   const [draggingCardPos, setDraggingCardPos] = useState({ x: 0, y: 0 });
   const [draggingCardOutside, setDraggingCardOutside] = useState<Category | null>(null);
+
+
+  type Position = { x: number; y: number };
+
+  const getPositionFromMouse = (e: React.MouseEvent): Position => ({ x: e.clientX, y: e.clientY });
+  const getPositionFromTouch = (touch: { clientX: number; clientY: number }): Position => ({
+    x: touch.clientX,
+    y: touch.clientY
+  });
 
   const stopCategoryDrag = () => setCategoryDragging(false);
 
@@ -70,12 +77,12 @@ export default function DraggableTodo() {
   };
 
   
-  const handleDraggingMove = (e: React.MouseEvent) => {
+  const handleDraggingMove = (pos: Position) => {
     if (!draggingCardOutside) return;
 
     setDraggingCardPos({
-      x: e.clientX - draggingCardOffset.x,
-      y: e.clientY - draggingCardOffset.y,
+    x: pos.x - draggingCardOffset.x,
+      y: pos.y - draggingCardOffset.y,
     });
   };
 
@@ -191,10 +198,17 @@ cardRefs.current.forEach(ref => {
   const [taskOffset, setTaskOffset] = useState({ x: 0, y: 0 });
 
 
-  // Criador de categoria (a "caixa de criar categoria")
   const [categoryPosition, setCategoryPosition] = useState(() => {
     const saved = localStorage.getItem("categoryPosition");
-    return saved ? JSON.parse(saved) : { x: 300, y: 100 };
+    if (saved) {
+      const pos = JSON.parse(saved);
+      return {
+       x: Math.min(pos.x, window.innerWidth - 20),
+       y: Math.min(pos.y, window.innerHeight - 60),
+      };
+    }
+    // posição inicial segura para mobile e desktop
+    return { x: 20, y: 100 };
   });
 
   const [categoryDragging, setCategoryDragging] = useState(false);
@@ -223,8 +237,8 @@ cardRefs.current.forEach(ref => {
   };
 
   window.addEventListener("mouseup", handleGlobalMouseUp);
-  return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-}, [draggingCardOutside, boxes, categories, cardsInBox]);;
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [draggingCardOutside, boxes, categories, cardsInBox]);;
 
 
 
@@ -234,7 +248,6 @@ cardRefs.current.forEach(ref => {
         prevCategories.map((c, i) => i === index ? newCategory : c)
       );
   };
-
 
 
 
@@ -266,30 +279,29 @@ cardRefs.current.forEach(ref => {
     setTaskOffset({ x: e.clientX - taskPosition.x, y: e.clientY - taskPosition.y });
   };
 
-  const handleTaskMouseMove = (e: React.MouseEvent) => {
+  const handleTaskMove = (pos: Position) => {
     if (!taskDragging) return;
-    setTaskPosition({ x: e.clientX - taskOffset.x, y: e.clientY - taskOffset.y });
+    const newX = pos.x - taskOffset.x;
+    const newY = pos.y - taskOffset.y;
+
+    setTaskPosition({ x: newX, y: newY });
   };
 
   const handleTaskMouseUp = () => setTaskDragging(false);
 
-  const handleCategoryMouseMove = (e: React.MouseEvent) => {
-    if (!categoryDragging || !categoryRef.current) return;
+  const handleCategoryMove = (pos: { x: number; y: number }) => {
+    if (!categoryDragging) return;
 
-    const rect = categoryRef.current.getBoundingClientRect();
-    const cardWidth = rect.width;
-    const cardHeight = rect.height;
+    // Largura do card
+    const cardWidth = 300; // ou pegue dinamicamente se quiser
+    const cardHeight = 80; // altura aproximada do card
 
-    let newX = e.clientX - categoryOffset.x;
-    let newY = e.clientY - categoryOffset.y;
-
-    // Limita para que o card não ultrapasse a tela
-    newX = Math.max(0, Math.min(window.innerWidth - cardWidth, newX));
-   newY = Math.max(0, Math.min(window.innerHeight - cardHeight, newY));
+    const newX = Math.min(window.innerWidth - cardWidth, Math.max(0, pos.x));
+    const newY = Math.min(window.innerHeight - cardHeight, Math.max(0, pos.y));
 
     setCategoryPosition({ x: newX, y: newY });
   };
-  
+
 
   const handleCategoryMouseUp = (index: number, card: HTMLDivElement | null) => {
     const cardData = categories[index];
@@ -313,25 +325,30 @@ cardRefs.current.forEach(ref => {
   };
 
   return (
-    <div
+   <div
       onMouseMove={(e) => {
-        handleTaskMouseMove(e);
-        handleCategoryMouseMove(e);
-        handleDraggingMove(e); // ⬅ aqui
-      }}
+    const pos = getPositionFromMouse(e);
+    handleTaskMove(pos);
+    handleDraggingMove(pos);
 
-      
+    if (categoryDragging) {
+      setCategoryPosition({
+        x: pos.x - categoryOffset.x,
+        y: pos.y - categoryOffset.y,
+      });
+    }
+  }}
+
       onMouseUp={() => {
         handleTaskMouseUp();
         stopCategoryDrag();
-        handleDraggingEnd(); // ⬅ aqui
-
+        handleDraggingEnd();
         setDraggingCardOutside(null);
         setDraggingCardOffset({ x: 0, y: 0 });
         setDraggingCardPos({ x: 0, y: 0 });
       }}
 
-       className={`fixed top-0 left-0 w-screen h-screen overflow-hidden ${darkMode ? "bg-black" : "bg-white"}`}
+      className={`fixed top-0 left-0 w-full min-h-screen p-4 ${darkMode ? "bg-black" : "bg-white"}`}
     >
       <button
         onClick={() => setDarkMode(!darkMode)}
@@ -348,34 +365,51 @@ cardRefs.current.forEach(ref => {
       </button>
 
       {/* Card de criação de tarefa */}
-      <div
-        ref={categoryRef}
-        onMouseDown={(e) => {
-          setCategoryDragging(true);
-          setCategoryOffset({ x: e.clientX - categoryPosition.x, y: e.clientY - categoryPosition.y });
-        }}
-        
-        onMouseUp={() => setCategoryDragging(false)}
-        style={{ position: "absolute", left: categoryPosition.x, top: categoryPosition.y, cursor: "grab" }}
-        className={`w-110 p-2 bg-gray-300 rounded-full shadow select-none flex items-center gap-2 w-40 sm:w-60 md:w-80 lg:w-110 ${
-             darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-black"
-        }`}
-      >
-        <h2 className="text-base sm:text-lg md:text-xl font-bold whitespace-nowrap">Nova tarefa</h2>
-        <input
-          value={categoryInput}
-          onChange={(e) => setCategoryInput(e.target.value)}
-          className={`
-                flex-1 p-1 sm:p-2 md:p-3 rounded-full placeholder-gray-500
-                focus:outline-none focus:ring-2 focus:ring-blue-400
-                ${darkMode ? "bg-white text-black" : "bg-white text-black"}
-            `}
-          placeholder="Nome da categoria"
-        />
-        <button onClick={addCategory} className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 md:py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex-shrink-0">
-          Criar
-        </button>
-      </div>
+<div
+  ref={categoryRef}
+  onMouseDown={(e) => {
+    const rect = categoryRef.current?.getBoundingClientRect();
+    if (rect) {
+      setCategoryOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    }
+    setCategoryDragging(true);
+  }}
+  onMouseUp={() => setCategoryDragging(false)}
+  style={{
+    position: "absolute",
+    left: Math.min(categoryPosition.x, window.innerWidth - 20),
+    top: Math.min(categoryPosition.y, window.innerHeight - 60),
+    cursor: "grab",
+  }}
+  className={`absolute left-0 top-0 w-11/12 max-w-sm sm:max-w-md p-3 rounded-full shadow select-none flex flex-col sm:flex-row items-center gap-2
+    ${darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-black"}`}
+>
+  <h2 className="text-base sm:text-lg md:text-xl font-bold whitespace-nowrap text-center sm:text-left">
+    Nova tarefa
+  </h2>
+  <input
+    value={categoryInput}
+    onChange={(e) => setCategoryInput(e.target.value)}
+    className={`
+      flex-1 w-full sm:w-auto min-w-0 p-2 rounded-full placeholder-gray-500
+      focus:outline-none focus:ring-2 focus:ring-blue-400
+      ${darkMode ? "bg-white text-black" : "bg-white text-black"}
+    `}
+    placeholder="Nome da categoria"
+  />
+  <button
+    onClick={addCategory}
+    className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 flex-shrink-0 w-full sm:w-auto"
+  >
+    Criar
+  </button>
+</div>
+
+
+
 
       {/* Botão para criar gaveta */}
       <button
@@ -384,7 +418,6 @@ cardRefs.current.forEach(ref => {
       >
         Criar Gaveta
       </button>
-
 
 
 
@@ -495,6 +528,7 @@ cardRefs.current.forEach(ref => {
               removeCategory={removeCategory} 
               onMouseUp={() => handleCategoryMouseUp(i, cardRefs.current[i])}
               draggingCardOutside={draggingCardOutside}
+              darkMode={darkMode}
               
             />
           </motion.div>

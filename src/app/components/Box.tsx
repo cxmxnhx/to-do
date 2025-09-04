@@ -28,8 +28,27 @@ const DraggableBox = forwardRef<HTMLDivElement, DraggableBoxProps>(
     const [dragging, setDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
 
+    // Dentro do DraggableBox
+    const handleTouchStart = (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      setDragging(true);
+      setOffset({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+      e.preventDefault(); // evita scroll
+     
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+      if (!dragging) return;
+      const touch = e.touches[0];
+      setPosition({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
+      e.preventDefault();
+    };
+
+    const handleTouchEnd = () => setDragging(false);
+
     // Drag da própria Box
     const handleMouseDown = (e: React.MouseEvent) => {
+      e.stopPropagation();
       setDragging(true);
       setOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
     };
@@ -44,7 +63,7 @@ const DraggableBox = forwardRef<HTMLDivElement, DraggableBoxProps>(
     return (
        <div
           ref={ref}
-          style={{ left: position.x, top: position.y, userSelect: "none" }}
+         style={{ left: position.x, top: position.y, userSelect: "none", touchAction: "none" }}
           className={`absolute w-72 min-h-40
             ${darkMode 
               ? "bg-white/20 backdrop-blur-md border border-white/30" 
@@ -54,6 +73,9 @@ const DraggableBox = forwardRef<HTMLDivElement, DraggableBoxProps>(
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
         <div className="text-white font-bold text-center">{label}</div>
         <div className="flex flex-col gap-2 mt-2">

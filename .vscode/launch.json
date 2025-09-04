@@ -6,7 +6,7 @@
       "request": "launch",
       "name": "Next.js",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["run", "dev", "--", "-H", "0.0.0.0"],
       "console": "integratedTerminal"
     }
   ]
