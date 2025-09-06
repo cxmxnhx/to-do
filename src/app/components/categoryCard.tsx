@@ -1,9 +1,12 @@
 "use client";
 import React from "react";
 import TodoItem from "./TodoItem";
+import { motion, AnimatePresence } from "framer-motion";
 
-interface Task { task: string; done: boolean; }
+
+interface Task { id:string, task: string; done: boolean; }
 interface Category {
+  id: string;
   name: string;
   x: number;
   y: number;
@@ -33,10 +36,13 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
  
 
     const handleAddTask = () => {
-      if (!category.input.trim()) return;
-      const newItems = [...category.items, { task: category.input, done: false }];
-      updateCategory(index, { ...category, items: newItems, input: "" });
-    };
+  if (!category.input.trim()) return;
+  const newItems = [
+    ...category.items, 
+    { id: crypto.randomUUID(), task: category.input, done: false }
+  ];
+  updateCategory(index, { ...category, items: newItems, input: "" });
+};
 
     const handleInputChange = (value: string) => {
       updateCategory(index, { ...category, input: value });
@@ -56,12 +62,15 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
 
     return (
       <div
-        className={`w-full sm:w-80 p-4 rounded shadow select-none flex flex-col h-96
-        ${darkMode ? "bg-gray-800 text-white" : "bg-gray-200 text-black"}`}
-      >
+  className={`w-full p-4 rounded shadow select-none flex flex-col h-96
+    ${darkMode
+      ? "bg-gradient-to-r from-gray-800 to-gray-900 text-white"
+      : "bg-gradient-to-r from-blue-50 to-blue-100 text-black"
+    }`}
+>
 
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">{category.name}</h2>
+          <h2 className={`text-lg font-bold ${darkMode ? "text-white" : "text-black"}`}>{category.name}</h2>
           <div className="flex gap-1">
             {onStore && (
             <button
@@ -74,7 +83,7 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
           </div>
           <button
             onClick={() => removeCategory(index)}
-            className="text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded"
+            className="text-red-500 bg-red-100 hover:text-red-600 hover:bg-red-200 px-2 py-1 rounded"
           >
             X
           </button>
@@ -95,17 +104,28 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2">
-          {category.items.map((t, idx) => (
-            <TodoItem
-              key={idx}
-              task={t.task}
-              done={t.done}
-              toggleDone={() => toggleTaskDone(idx)}
-              removeTask={() => removeTask(idx)}
-            />
-          ))}
-        </div>
+       <div className="flex-1 overflow-y-auto  overflow-x-hidden space-y-2">
+  <AnimatePresence>
+    {category.items.map((t, idx) => (
+     <motion.div
+  key={t.id} // agora é seguro
+  initial={{ opacity: 0, x: 20 }}
+  animate={{ opacity: 1, x: 0 }}
+  exit={{ opacity: 0, x: 50 }}
+  transition={{ duration: 0.2 }}
+>
+  <TodoItem
+    id={t.id}   // passa o id para o componente
+    task={t.task}
+    done={t.done}
+    toggleDone={() => toggleTaskDone(idx)}
+    removeTask={() => removeTask(idx)}
+  />
+</motion.div>
+
+    ))}
+  </AnimatePresence>
+</div>
       </div>
     );
   }

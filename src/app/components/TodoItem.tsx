@@ -7,12 +7,32 @@ type TodoItemProps = {
 
 export default function TodoItem({ task, done, toggleDone, removeTask }: TodoItemProps) {
   return (
-    <div className={`flex justify-between items-center p-2 border-b text-gray-900 transition ${done ? "bg-green-200 text-gray-400" : "bg-gray-50"}`}>
-      <span className={done ? " text-gray-400" : ""}>{task}</span>
-      <div>
-        <button onClick={toggleDone} className="mr-2 hover:text-green-500 transition">✔</button>
-        <button onClick={removeTask} className="hover:text-red-500 transition">✖</button>
-      </div>
+    <div
+      className={`flex justify-between items-center p-2 border-b transition-all duration-300 rounded
+        ${done ? "bg-green-200" : "bg-gray-50"}`}
+    >
+      <span
+        onClick={toggleDone}
+        className={`cursor-pointer text-sm transition-all duration-300
+          ${done ? "line-through opacity-50 text-gray-500" : "opacity-100 text-gray-900"}`}
+      >
+        {task}
+      </span>
+      <div className="flex items-center gap-1">
+  <button
+    onClick={toggleDone}
+    className="w-5 h-5 flex items-center justify-center bg-green-100 rounded hover:bg-green-200 transition"
+  >
+    <span className="text-green-600 text-sm">✔</span>
+  </button>
+
+  <button
+    onClick={removeTask}
+    className="w-3 h-3 flex items-center justify-center hover:opacity-80 transition-opacity duration-200"
+  >
+    <img src="/close.png" className="w-full h-full object-contain transform transition-transform duration-200  hover:scale-110" />
+  </button>
+</div>
     </div>
   );
 }
