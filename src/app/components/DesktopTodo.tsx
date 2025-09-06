@@ -20,14 +20,12 @@ export default function DesktopTodo() {
       "Domingo",
     ];
 
-
-   const newCategories = days
-    .filter(day => !categories.some(c => c.name === day))
-    .map(day => ({ id: crypto.randomUUID(), name: day, items: [], input: "" }))
+    const newCategories = days
+      .filter(day => !categories.some(c => c.name === day))
+      .map(day => ({ id: crypto.randomUUID(), name: day, items: [], input: "" }));
 
     setCategories(prev => [...prev, ...newCategories]);
   };
-
 
   // Guardar card
   const storeCategory = (index: number) => {
@@ -46,17 +44,17 @@ export default function DesktopTodo() {
   // Adicionar nova categoria
   const addCategory = () => {
     if (!categoryInput.trim()) return;
-   setCategories([...categories, { id: crypto.randomUUID(), name: categoryInput, items: [], input: "" }]);
+    setCategories([...categories, { id: crypto.randomUUID(), name: categoryInput, items: [], input: "" }]);
     setCategoryInput("");
   };
 
   return (
-    <div
-  className={`w-full min-h-screen p-8 transition-colors duration-200 
-    ${darkMode ? "bg-black text-white" : "bg-gray-100 text-black"}`}
->
-      {/* Botões de controle */}
-      <div className="flex justify-between mb-4">
+    <div className={`w-full min-h-screen p-8 transition-colors duration-200 
+      ${darkMode ? "bg-black text-white" : "bg-gray-100 text-black"}`}
+    >
+
+      {/* Botões de controle na mesma linha */}
+      <div className="flex justify-between items-center mb-4 gap-2">
         <button
           onClick={() => setDarkMode(!darkMode)}
           className={`px-3 py-1 rounded ${
@@ -68,10 +66,6 @@ export default function DesktopTodo() {
           {darkMode ? "Claro" : "Escuro"}
         </button>
 
-
-
-
-          {/* Botão gerar dias */}
         <button
           onClick={generateWeekDays}
           className={`px-3 py-1 rounded ${
@@ -97,7 +91,7 @@ export default function DesktopTodo() {
 
       {/* Input de nova categoria */}
       <div className="flex justify-center mb-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full max-w-md">
           <input
             value={categoryInput}
             onChange={(e) => setCategoryInput(e.target.value)}
@@ -118,35 +112,35 @@ export default function DesktopTodo() {
         </div>
       </div>
 
+      {/* Grid de categorias */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-  <AnimatePresence>
-    {categories.map((c, i) => (
-      <motion.div
-        key={c.id}
-        initial={{ opacity: 0, y: -20, scale: 0.86 }}
-  animate={{ opacity: 1, y: 0, scale: 0.95 }}
-        exit={{ opacity: 0, y: 20 }}
-         transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 20 }}
-       className="hover:scale-105 hover:shadow-lg transform"
->
-        <CategoryCard
-        
-          category={c}
-          index={i}
-          updateCategory={(index, newCat) =>
-            setCategories(prev => prev.map((cat, j) => (j === index ? newCat : cat)))
-          }
-          removeCategory={(index) =>
-            setCategories(prev => prev.filter((_, j) => j !== index))
-          }
-          onStore={storeCategory}
-          draggingCardOutside={null}
-          darkMode={darkMode}
-        />
-      </motion.div>
-    ))}
-  </AnimatePresence>
-</div>
+        <AnimatePresence>
+          {categories.map((c, i) => (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: -20, scale: 0.86 }}
+              animate={{ opacity: 1, y: 0, scale: 0.95 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 20 }}
+              className="hover:scale-105 hover:shadow-lg transform"
+            >
+              <CategoryCard
+                category={c}
+                index={i}
+                updateCategory={(index, newCat) =>
+                  setCategories(prev => prev.map((cat, j) => (j === index ? newCat : cat)))
+                }
+                removeCategory={(index) =>
+                  setCategories(prev => prev.filter((_, j) => j !== index))
+                }
+                onStore={storeCategory}
+                draggingCardOutside={null}
+                darkMode={darkMode}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Cards armazenados */}
       <div
@@ -164,6 +158,7 @@ export default function DesktopTodo() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }

@@ -29,11 +29,14 @@ interface CategoryCardProps {
   darkMode: boolean;
 } 
 
-const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
-  (
-    { category, index, updateCategory, removeCategory, onStore, darkMode },
-  ) => {
- 
+const CategoryCard = ({
+  category,
+  index,
+  updateCategory,
+  removeCategory,
+  onStore,
+  darkMode
+}: CategoryCardProps) => {
 
     const handleAddTask = () => {
   if (!category.input.trim()) return;
@@ -62,74 +65,83 @@ const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(
 
     return (
       <div
-  className={`w-full p-4 rounded shadow select-none flex flex-col h-96
-    ${darkMode
-      ? "bg-gradient-to-r from-gray-800 to-gray-900 text-white"
-      : "bg-gradient-to-r from-blue-50 to-blue-100 text-black"
-    }`}
->
-
+        className={`w-full p-4 rounded shadow select-none flex flex-col h-96 transition-colors duration-200
+          ${darkMode
+            ? "bg-gradient-to-r from-gray-800 to-gray-900 text-white"
+            : "bg-gradient-to-r from-blue-50 to-blue-100 text-black"
+          }`}
+      >
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-lg font-bold ${darkMode ? "text-white" : "text-black"}`}>{category.name}</h2>
+          <h2 className={`text-lg font-bold ${darkMode ? "text-white" : "text-black"}`}>
+            {category.name}
+          </h2>
+
           <div className="flex gap-1">
             {onStore && (
-            <button
-              onClick={() => onStore(index)}
-              className="text-black bg-gray-200 hover:bg-gray-400 px-2 py-1 rounded"
-            >
-             Salvar
-            </button>
-          )}
+              <button
+                onClick={() => onStore(index)}
+                className={`px-2 py-1 rounded transition-colors duration-200 
+                  ${darkMode ? "bg-gray-700 text-white hover:bg-gray-600" : "bg-gray-200 text-black hover:bg-gray-300"}`}
+              >
+                Salvar
+              </button>
+            )}
           </div>
+
           <button
             onClick={() => removeCategory(index)}
-            className="text-red-500 bg-red-100 hover:text-red-600 hover:bg-red-200 px-2 py-1 rounded"
+            className={`px-2 py-1 rounded transition-colors duration-200
+              ${darkMode ? "bg-red-700 text-white hover:bg-red-600" : "bg-red-100 text-red-500 hover:bg-red-200"}`}
           >
             X
           </button>
         </div>
 
+        {/* Input e botão adicionar */}
         <div className="flex mb-2 gap-2">
           <input
             value={category.input}
             onChange={(e) => handleInputChange(e.target.value)}
-            className="flex-1 p-2 rounded text-black bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className={`flex-1 p-2 rounded placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400
+              ${darkMode ? "bg-gray-700 text-white border border-gray-600" : "bg-white text-black border border-gray-300"}`}
             placeholder="Nova tarefa"
           />
           <button
             onClick={handleAddTask}
-            className="px-1 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex-shrink-0"
+            className={`px-1 py-2 rounded flex-shrink-0 transition-colors duration-200
+              ${darkMode ? "bg-blue-600 text-white hover:bg-blue-500" : "bg-blue-500 text-white hover:bg-blue-600"}`}
           >
             Adicionar
           </button>
         </div>
 
-       <div className="flex-1 overflow-y-auto  overflow-x-hidden space-y-2">
-  <AnimatePresence>
-    {category.items.map((t, idx) => (
-     <motion.div
-  key={t.id} // agora é seguro
-  initial={{ opacity: 0, x: 20 }}
-  animate={{ opacity: 1, x: 0 }}
-  exit={{ opacity: 0, x: 50 }}
-  transition={{ duration: 0.2 }}
->
-  <TodoItem
-    id={t.id}   // passa o id para o componente
-    task={t.task}
-    done={t.done}
-    toggleDone={() => toggleTaskDone(idx)}
-    removeTask={() => removeTask(idx)}
-  />
-</motion.div>
-
-    ))}
-  </AnimatePresence>
-</div>
+        {/* Lista de tarefas */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2">
+          <AnimatePresence>
+            {category.items.map((t, idx) => (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 50 }}
+                transition={{ duration: 0.2 }}
+              >
+                <TodoItem
+                  id={t.id}
+                  task={t.task}
+                  done={t.done}
+                  toggleDone={() => toggleTaskDone(idx)}
+                  removeTask={() => removeTask(idx)}
+                  darkMode={darkMode}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
     );
   }
-);
 
 CategoryCard.displayName = "CategoryCard";
 export default CategoryCard;
