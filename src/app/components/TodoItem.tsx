@@ -4,7 +4,7 @@ type TodoItemProps = {
   done: boolean;
   toggleDone: () => void;
   removeTask: () => void;
-  darkMode: boolean; // nova prop
+  darkMode: boolean; 
 };
 
 export default function TodoItem({ task, done, toggleDone, removeTask, darkMode }: TodoItemProps) {
